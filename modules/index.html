@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pothole Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <style>
+    #map { height: 100vh; }
+  </style>
+</head>
+<body>
+  <h2 style="text-align:center;">Pothole Detection Map</h2>
+  <div id="map"></div>
+
+  <script>
+  var map = L.map('map').setView([12.9, 77.6], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+
+  async function loadPotholes() {
+    let response = await fetch("http://192.168.1.33:5000/api/potholes");
+    let data = await response.json();
+
+    if (data.length === 0) return;
+
+    let bounds = [];
+    data.forEach(p => {
+        // Use a red circleMarker for better visibility
+        let marker = L.circleMarker([p.latitude, p.longitude], {
+            color: 'red',
+            radius: 6
+        }).addTo(map)
+        .bindPopup(`<b>Pothole</b><br>Confidence: ${p.confidence.toFixed(2)}<br>Time: ${p.timestamp}`);
+      
+        bounds.push([p.latitude, p.longitude]);
+    });
+
+    // Fit map to all markers
+    map.fitBounds(bounds);
+    console.log(bounds);
+
+}
+
+
+  // Initial load
+  loadPotholes();
+
+  // Refresh every 10 seconds to show new potholes
+  setInterval(loadPotholes, 10000);
+</script>
+
+</body>
+</html>
