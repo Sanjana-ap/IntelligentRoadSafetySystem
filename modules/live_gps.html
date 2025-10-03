@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live GPS to Flask</title>
+</head>
+<body>
+<h2>Live GPS Stream to Flask Server</h2>
+<p id="status">Initializing...</p>
+
+<script>
+const API_URL = "http://192.168.1.33:5000/api/gps"; // <-- replace with your PC's local IP
+
+async function sendGPS(lat, lon, heading) {
+    try {
+        const res = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                lat: lat,
+                lon: lon,
+                heading: heading || 0, 
+                timestamp: new Date().toISOString()
+            })
+        });
+        const data = await res.json();
+        document.getElementById("status").innerText =
+            `Sent GPS: ${lat.toFixed(6)}, ${lon.toFixed(6)} | Response: ${JSON.stringify(data)}`;
+        console.log("Sent GPS:", lat, lon, "Response:", data);
+    } catch (err) {
+        document.getElementById("status").innerText = "Error sending GPS: " + err;
+        console.error(err);
+    }
+}
+
+function startStreaming() {
+    if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser");
+        return;
+    }
+
+    navigator.geolocation.watchPosition(
+        (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            const heading = position.coords.heading || 0;
+            sendGPS(lat, lon, heading);
+        },
+        (err) => {
+            console.error("Geolocation error:", err);
+            document.getElementById("status").innerText = "Geolocation error: " + err.message;
+        },
+        { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
+    );
+}
+
+startStreaming();
+</script>
+</body>
+</html>
